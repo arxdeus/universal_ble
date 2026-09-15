@@ -157,4 +157,45 @@ void main() {
 
     expect(received, PairingState.rejectedByUser);
   });
+
+  group('Apple pairing outcome is derived from the operation error', () {
+    // Apple exposes no bonding API: pairing happens implicitly when an
+    // encrypted characteristic is touched, so the only signal about a
+    // refused pairing dialog is the error of that read/write.
+    PairingState? stateFor(UniversalBleErrorCode code) =>
+        UniversalBle.pairingStateFromError(
+          UniversalBleException(code: code, message: code.name),
+        );
+
+    test('authentication errors mean the user refused the dialog', () {
+      expect(
+        stateFor(UniversalBleErrorCode.authenticationFailure),
+        PairingState.rejectedByUser,
+      );
+      expect(
+        stateFor(UniversalBleErrorCode.insufficientAuthentication),
+        PairingState.rejectedByUser,
+      );
+      expect(
+        stateFor(UniversalBleErrorCode.pairingCancelled),
+        PairingState.rejectedByUser,
+      );
+    });
+
+    test('a peripheral that cannot bond is a plain failure', () {
+      expect(
+        stateFor(UniversalBleErrorCode.pairingFailed),
+        PairingState.failed,
+      );
+      expect(
+        stateFor(UniversalBleErrorCode.notPairable),
+        PairingState.failed,
+      );
+    });
+
+    test('unrelated errors report no pairing outcome at all', () {
+      expect(stateFor(UniversalBleErrorCode.deviceDisconnected), isNull);
+      expect(stateFor(UniversalBleErrorCode.connectionTimeout), isNull);
+    });
+  });
 }

@@ -1121,24 +1121,25 @@ fire_and_forget UniversalBlePlugin::PairAsync(
       const auto pair_result =
           co_await device_information.Pairing().PairAsync();
       UniversalBleLogger::LogInfo("PairLog: Received pairing status");
-      bool is_paired =
-          pair_result.Status() == DevicePairingResultStatus::Paired;
+      const DevicePairingResultStatus status = pair_result.Status();
+      bool is_paired = status == DevicePairingResultStatus::Paired;
       result(is_paired);
 
-      const auto error_str =
-          device_pairing_result_to_string(pair_result.Status());
+      const PairingState pairing_state =
+          device_pairing_result_to_pairing_state(status);
+      const auto error_str = device_pairing_result_to_string(status);
       std::optional<std::string> captured_error;
       if (error_str.has_value()) {
         captured_error = error_str.value();
       }
-      ui_thread_handler_.Post([device_id, is_paired, captured_error] {
+      ui_thread_handler_.Post([device_id, pairing_state, captured_error] {
         const std::string *error_msg = nullptr;
         std::string error_string;
         if (captured_error.has_value()) {
           error_string = captured_error.value();
           error_msg = &error_string;
         }
-        callback_channel->OnPairStateChange(device_id, is_paired, error_msg,
+        callback_channel->OnPairStateChange(device_id, pairing_state, error_msg,
                                             SuccessCallback, ErrorCallback);
       });
     }
@@ -1185,19 +1186,21 @@ fire_and_forget UniversalBlePlugin::CustomPairAsync(
       bool is_paired = status == DevicePairingResultStatus::Paired;
       result(is_paired);
 
+      const PairingState pairing_state =
+          device_pairing_result_to_pairing_state(status);
       const auto error_str = device_pairing_result_to_string(status);
       std::optional<std::string> captured_error;
       if (error_str.has_value()) {
         captured_error = error_str.value();
       }
-      ui_thread_handler_.Post([device_id, is_paired, captured_error] {
+      ui_thread_handler_.Post([device_id, pairing_state, captured_error] {
         const std::string *error_msg = nullptr;
         std::string error_string;
         if (captured_error.has_value()) {
           error_string = captured_error.value();
           error_msg = &error_string;
         }
-        callback_channel->OnPairStateChange(device_id, is_paired, error_msg,
+        callback_channel->OnPairStateChange(device_id, pairing_state, error_msg,
                                             SuccessCallback, ErrorCallback);
       });
     }

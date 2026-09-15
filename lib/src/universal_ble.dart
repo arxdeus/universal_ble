@@ -6,6 +6,7 @@ import 'package:universal_ble/src/universal_ble_pigeon/universal_ble_pigeon_chan
 import 'package:universal_ble/src/universal_ble_web/universal_ble_web.dart';
 import 'package:universal_ble/src/utils/ble_command_queue.dart';
 import 'package:universal_ble/src/utils/cache_handler.dart';
+import 'package:universal_ble/src/utils/universal_ble_error_parser.dart';
 import 'package:universal_ble/src/utils/universal_logger.dart';
 import 'package:universal_ble/universal_ble.dart';
 
@@ -573,13 +574,57 @@ class UniversalBle {
       if (pairingCommand == null) {
         UniversalLogger.logWarning("PairingCommand required to get result");
       }
-      await _connectAndExecuteBleCommand(
-        deviceId,
-        pairingCommand,
-        timeout: timeout,
-        queueId: queueId,
-      );
+      // Apple has no bonding API: pairing is triggered by touching an
+      // encrypted characteristic, so the ceremony's outcome only ever
+      // surfaces as the error of that operation. Translate it into a
+      // PairingState so consumers on Apple platforms learn about a
+      // refused pairing dialog like they do everywhere else.
+      try {
+        await _connectAndExecuteBleCommand(
+          deviceId,
+          pairingCommand,
+          timeout: timeout,
+          queueId: queueId,
+        );
+      } catch (error) {
+        final pairingState = pairingStateFromError(error);
+        if (pairingState != null) {
+          _platform.updatePairingState(deviceId, pairingState);
+        }
+        rethrow;
+      }
     }
+  }
+
+  /// Classifies a failed Apple pairing attempt.
+  ///
+  /// Returns `null` when the error says nothing about the pairing
+  /// ceremony itself (e.g. the device disconnected), so no misleading
+  /// state is reported.
+  @visibleForTesting
+  static PairingState? pairingStateFromError(Object error) {
+    final code = error is UniversalBleException
+        ? error.code
+        : UniversalBleErrorParser.getCode(error);
+    return switch (code) {
+      // The user dismissed or rejected the system pairing dialog, or let
+      // it time out: the peripheral demanded authentication and never
+      // got it.
+      UniversalBleErrorCode.authenticationFailure ||
+      UniversalBleErrorCode.insufficientAuthentication ||
+      UniversalBleErrorCode.pairingCancelled ||
+      UniversalBleErrorCode.pairingTimeout => PairingState.rejectedByUser,
+      // accessDenied is a permission problem on the app's side, not a
+      // decision made by the user in the pairing dialog.
+      UniversalBleErrorCode.accessDenied ||
+      UniversalBleErrorCode.pairingFailed ||
+      UniversalBleErrorCode.pairingNotAllowed ||
+      UniversalBleErrorCode.notPairable ||
+      UniversalBleErrorCode.insufficientEncryption ||
+      UniversalBleErrorCode.insufficientAuthorization ||
+      UniversalBleErrorCode.protectionLevelNotMet => PairingState.failed,
+      _ => null,
+    };
   }
 
   /// Unpair a device.

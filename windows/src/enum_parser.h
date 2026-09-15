@@ -76,6 +76,30 @@ namespace universal_ble
 		}
 	}
 
+	/// Maps a WinRT pairing result to the cross-platform PairingState.
+	///
+	/// Windows reports the ceremony outcome directly, so a user dismissing
+	/// or rejecting the pairing prompt (PairingCanceled / RejectedByHandler /
+	/// AuthenticationTimeout) is distinguishable from a device that simply
+	/// cannot bond.
+	inline PairingState device_pairing_result_to_pairing_state(const DevicePairingResultStatus result)
+	{
+		switch (result)
+		{
+			case DevicePairingResultStatus::Paired:
+			case DevicePairingResultStatus::AlreadyPaired:
+				return PairingState::kPaired;
+			case DevicePairingResultStatus::PairingCanceled:
+			case DevicePairingResultStatus::RejectedByHandler:
+			case DevicePairingResultStatus::AuthenticationTimeout:
+				return PairingState::kRejectedByUser;
+			case DevicePairingResultStatus::NotPaired:
+				return PairingState::kUnpaired;
+			default:
+				return PairingState::kFailed;
+		}
+	}
+
 
 	inline AvailabilityState get_availability_state_from_radio(const RadioState radio_state)
 	{
