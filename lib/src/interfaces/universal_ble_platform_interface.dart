@@ -13,7 +13,7 @@ abstract class UniversalBlePlatform {
   OnAvailabilityChange? onAvailabilityChange;
   OnPairingStateChange? onPairingStateChange;
   OnConnectionParametersChange? onConnectionParametersChange;
-  final Map<String, bool> _pairStateMap = {};
+  final Map<String, PairingState> _pairStateMap = {};
   final Map<String, BleConnectionParametersUpdated>
   _lastConnectionParametersMap = {};
 
@@ -30,7 +30,7 @@ abstract class UniversalBlePlatform {
       >();
 
   final _pairStateStreamController =
-      UniversalBleStreamController<({String deviceId, bool isPaired})>();
+      UniversalBleStreamController<({String deviceId, PairingState state})>();
 
   /// Send latest availability state upon subscribing
   late final _availabilityStreamController =
@@ -171,11 +171,12 @@ abstract class UniversalBlePlatform {
         .map((e) => e.value);
   }
 
-  Stream<bool> pairingStateStream(String deviceId) {
+  /// Pairing outcomes of a device, including why a bond was refused.
+  Stream<PairingState> pairingStateStream(String deviceId) {
     final target = deviceId.toLowerCase();
     return _pairStateStreamController.stream
         .where((e) => e.deviceId == deviceId || e.deviceId.toLowerCase() == target)
-        .map((e) => e.isPaired);
+        .map((e) => e.state);
   }
 
   /// Update Handlers
@@ -245,17 +246,17 @@ abstract class UniversalBlePlatform {
     } catch (_) {}
   }
 
-  void updatePairingState(String deviceId, bool isPaired) {
+  void updatePairingState(String deviceId, PairingState state) {
     // Key by the canonical id so the same device reported in another case doesn't create a second entry and
     // slip past this dedup. The emitted deviceId keeps the platform's case.
     final key = deviceId.toLowerCase();
-    if (_pairStateMap[key] == isPaired) return;
-    _pairStateMap[key] = isPaired;
+    if (_pairStateMap[key] == state) return;
+    _pairStateMap[key] = state;
 
-    _pairStateStreamController.add((deviceId: deviceId, isPaired: isPaired));
+    _pairStateStreamController.add((deviceId: deviceId, state: state));
 
     try {
-      onPairingStateChange?.call(deviceId, isPaired);
+      onPairingStateChange?.call(deviceId, state);
     } catch (_) {}
   }
 

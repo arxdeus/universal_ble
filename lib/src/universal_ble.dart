@@ -64,8 +64,12 @@ class UniversalBle {
   ) =>
       _platform.characteristicValueStream(deviceId, characteristicId);
 
-  /// Pairing state stream
-  static Stream<bool> pairingStateStream(String deviceId) =>
+  /// Pairing state stream.
+  ///
+  /// Emits the outcome of bonding attempts, including
+  /// [PairingState.rejectedByUser] when the user refuses, cancels or
+  /// ignores the system pairing dialog.
+  static Stream<PairingState> pairingStateStream(String deviceId) =>
       _platform.pairingStateStream(deviceId);
 
   /// Get Bluetooth availability state.
@@ -843,7 +847,9 @@ class UniversalBle {
       timeout: timeout,
       queueId: queueId,
     );
-    if (updateCallbackValue) _platform.updatePairingState(deviceId, true);
+    if (updateCallbackValue) {
+      _platform.updatePairingState(deviceId, PairingState.paired);
+    }
   }
 
   // Fire and forget, and do not rely on result

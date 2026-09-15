@@ -203,6 +203,32 @@ enum BleConnectionState: Int {
   case disconnecting = 3
 }
 
+/// Outcome of a pairing (bonding) attempt.
+///
+/// Platforms only report "paired / not paired", which conflates two very
+/// different situations: the user explicitly refusing the system pairing
+/// dialog, and the peripheral being unable to bond at all. Consumers must
+/// be able to tell them apart: a refusal is a user decision and has to
+/// abort the flow, while an unsupported/failed bond may legitimately be
+/// ignored by apps that can work without a bond.
+enum PairingState: Int {
+  /// Bond established (`BOND_BONDED`).
+  case paired = 0
+  /// Bonding is in progress (`BOND_BONDING`); no outcome yet.
+  case pairing = 1
+  /// The user rejected, cancelled or ignored the system pairing dialog.
+  ///
+  /// Android: `UNBOND_REASON_AUTH_REJECTED`, `UNBOND_REASON_AUTH_CANCELED`
+  /// or `UNBOND_REASON_AUTH_TIMEOUT`.
+  case rejectedByUser = 2
+  /// Bonding failed for a non-user reason (peripheral refused SMP, link
+  /// lost, authentication failure, ...).
+  case failed = 3
+  /// The bond was removed / the device is no longer paired, without an
+  /// attempt being in flight.
+  case unpaired = 4
+}
+
 enum BleInputProperty: Int {
   case disabled = 0
   case notification = 1
@@ -1295,114 +1321,120 @@ private class UniversalBlePigeonCodecReader: FlutterStandardReader {
     case 132:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return BleInputProperty(rawValue: enumResultAsInt)
+        return PairingState(rawValue: enumResultAsInt)
       }
       return nil
     case 133:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return BleOutputProperty(rawValue: enumResultAsInt)
+        return BleInputProperty(rawValue: enumResultAsInt)
       }
       return nil
     case 134:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return BleConnectionPriority(rawValue: enumResultAsInt)
+        return BleOutputProperty(rawValue: enumResultAsInt)
       }
       return nil
     case 135:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return AndroidScanMode(rawValue: enumResultAsInt)
+        return BleConnectionPriority(rawValue: enumResultAsInt)
       }
       return nil
     case 136:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return AndroidScanCallbackType(rawValue: enumResultAsInt)
+        return AndroidScanMode(rawValue: enumResultAsInt)
       }
       return nil
     case 137:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return AndroidScanMatchMode(rawValue: enumResultAsInt)
+        return AndroidScanCallbackType(rawValue: enumResultAsInt)
       }
       return nil
     case 138:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return AndroidScanNumOfMatches(rawValue: enumResultAsInt)
+        return AndroidScanMatchMode(rawValue: enumResultAsInt)
       }
       return nil
     case 139:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return CharacteristicProperty(rawValue: enumResultAsInt)
+        return AndroidScanNumOfMatches(rawValue: enumResultAsInt)
       }
       return nil
     case 140:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return PeripheralReadinessState(rawValue: enumResultAsInt)
+        return CharacteristicProperty(rawValue: enumResultAsInt)
       }
       return nil
     case 141:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return PeripheralAttributePermission(rawValue: enumResultAsInt)
+        return PeripheralReadinessState(rawValue: enumResultAsInt)
       }
       return nil
     case 142:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return PeripheralAdvertisingState(rawValue: enumResultAsInt)
+        return PeripheralAttributePermission(rawValue: enumResultAsInt)
       }
       return nil
     case 143:
       let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
       if let enumResultAsInt = enumResultAsInt {
-        return UniversalBleErrorCode(rawValue: enumResultAsInt)
+        return PeripheralAdvertisingState(rawValue: enumResultAsInt)
       }
       return nil
     case 144:
-      return UniversalBleScanResult.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return UniversalBleErrorCode(rawValue: enumResultAsInt)
+      }
+      return nil
     case 145:
-      return UniversalBleService.fromList(self.readValue() as! [Any?])
+      return UniversalBleScanResult.fromList(self.readValue() as! [Any?])
     case 146:
-      return UniversalBleCharacteristic.fromList(self.readValue() as! [Any?])
+      return UniversalBleService.fromList(self.readValue() as! [Any?])
     case 147:
-      return UniversalBleDescriptor.fromList(self.readValue() as! [Any?])
+      return UniversalBleCharacteristic.fromList(self.readValue() as! [Any?])
     case 148:
-      return BleConnectionParametersUpdated.fromList(self.readValue() as! [Any?])
+      return UniversalBleDescriptor.fromList(self.readValue() as! [Any?])
     case 149:
-      return AndroidOptions.fromList(self.readValue() as! [Any?])
+      return BleConnectionParametersUpdated.fromList(self.readValue() as! [Any?])
     case 150:
-      return UniversalScanConfig.fromList(self.readValue() as! [Any?])
+      return AndroidOptions.fromList(self.readValue() as! [Any?])
     case 151:
-      return UniversalScanFilter.fromList(self.readValue() as! [Any?])
+      return UniversalScanConfig.fromList(self.readValue() as! [Any?])
     case 152:
-      return ManufacturerDataFilter.fromList(self.readValue() as! [Any?])
+      return UniversalScanFilter.fromList(self.readValue() as! [Any?])
     case 153:
-      return UniversalManufacturerData.fromList(self.readValue() as! [Any?])
+      return ManufacturerDataFilter.fromList(self.readValue() as! [Any?])
     case 154:
-      return AppleConnectionOptions.fromList(self.readValue() as! [Any?])
+      return UniversalManufacturerData.fromList(self.readValue() as! [Any?])
     case 155:
-      return AndroidConnectionOptions.fromList(self.readValue() as! [Any?])
+      return AppleConnectionOptions.fromList(self.readValue() as! [Any?])
     case 156:
-      return ConnectionPlatformConfig.fromList(self.readValue() as! [Any?])
+      return AndroidConnectionOptions.fromList(self.readValue() as! [Any?])
     case 157:
-      return PeripheralAndroidOptions.fromList(self.readValue() as! [Any?])
+      return ConnectionPlatformConfig.fromList(self.readValue() as! [Any?])
     case 158:
-      return PeripheralPlatformConfig.fromList(self.readValue() as! [Any?])
+      return PeripheralAndroidOptions.fromList(self.readValue() as! [Any?])
     case 159:
-      return PeripheralService.fromList(self.readValue() as! [Any?])
+      return PeripheralPlatformConfig.fromList(self.readValue() as! [Any?])
     case 160:
-      return PeripheralCharacteristic.fromList(self.readValue() as! [Any?])
+      return PeripheralService.fromList(self.readValue() as! [Any?])
     case 161:
-      return PeripheralDescriptor.fromList(self.readValue() as! [Any?])
+      return PeripheralCharacteristic.fromList(self.readValue() as! [Any?])
     case 162:
-      return PeripheralReadRequestResult.fromList(self.readValue() as! [Any?])
+      return PeripheralDescriptor.fromList(self.readValue() as! [Any?])
     case 163:
+      return PeripheralReadRequestResult.fromList(self.readValue() as! [Any?])
+    case 164:
       return PeripheralWriteRequestResult.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -1421,101 +1453,104 @@ private class UniversalBlePigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? BleConnectionState {
       super.writeByte(131)
       super.writeValue(value.rawValue)
-    } else if let value = value as? BleInputProperty {
+    } else if let value = value as? PairingState {
       super.writeByte(132)
       super.writeValue(value.rawValue)
-    } else if let value = value as? BleOutputProperty {
+    } else if let value = value as? BleInputProperty {
       super.writeByte(133)
       super.writeValue(value.rawValue)
-    } else if let value = value as? BleConnectionPriority {
+    } else if let value = value as? BleOutputProperty {
       super.writeByte(134)
       super.writeValue(value.rawValue)
-    } else if let value = value as? AndroidScanMode {
+    } else if let value = value as? BleConnectionPriority {
       super.writeByte(135)
       super.writeValue(value.rawValue)
-    } else if let value = value as? AndroidScanCallbackType {
+    } else if let value = value as? AndroidScanMode {
       super.writeByte(136)
       super.writeValue(value.rawValue)
-    } else if let value = value as? AndroidScanMatchMode {
+    } else if let value = value as? AndroidScanCallbackType {
       super.writeByte(137)
       super.writeValue(value.rawValue)
-    } else if let value = value as? AndroidScanNumOfMatches {
+    } else if let value = value as? AndroidScanMatchMode {
       super.writeByte(138)
       super.writeValue(value.rawValue)
-    } else if let value = value as? CharacteristicProperty {
+    } else if let value = value as? AndroidScanNumOfMatches {
       super.writeByte(139)
       super.writeValue(value.rawValue)
-    } else if let value = value as? PeripheralReadinessState {
+    } else if let value = value as? CharacteristicProperty {
       super.writeByte(140)
       super.writeValue(value.rawValue)
-    } else if let value = value as? PeripheralAttributePermission {
+    } else if let value = value as? PeripheralReadinessState {
       super.writeByte(141)
       super.writeValue(value.rawValue)
-    } else if let value = value as? PeripheralAdvertisingState {
+    } else if let value = value as? PeripheralAttributePermission {
       super.writeByte(142)
       super.writeValue(value.rawValue)
-    } else if let value = value as? UniversalBleErrorCode {
+    } else if let value = value as? PeripheralAdvertisingState {
       super.writeByte(143)
       super.writeValue(value.rawValue)
-    } else if let value = value as? UniversalBleScanResult {
+    } else if let value = value as? UniversalBleErrorCode {
       super.writeByte(144)
-      super.writeValue(value.toList())
-    } else if let value = value as? UniversalBleService {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? UniversalBleScanResult {
       super.writeByte(145)
       super.writeValue(value.toList())
-    } else if let value = value as? UniversalBleCharacteristic {
+    } else if let value = value as? UniversalBleService {
       super.writeByte(146)
       super.writeValue(value.toList())
-    } else if let value = value as? UniversalBleDescriptor {
+    } else if let value = value as? UniversalBleCharacteristic {
       super.writeByte(147)
       super.writeValue(value.toList())
-    } else if let value = value as? BleConnectionParametersUpdated {
+    } else if let value = value as? UniversalBleDescriptor {
       super.writeByte(148)
       super.writeValue(value.toList())
-    } else if let value = value as? AndroidOptions {
+    } else if let value = value as? BleConnectionParametersUpdated {
       super.writeByte(149)
       super.writeValue(value.toList())
-    } else if let value = value as? UniversalScanConfig {
+    } else if let value = value as? AndroidOptions {
       super.writeByte(150)
       super.writeValue(value.toList())
-    } else if let value = value as? UniversalScanFilter {
+    } else if let value = value as? UniversalScanConfig {
       super.writeByte(151)
       super.writeValue(value.toList())
-    } else if let value = value as? ManufacturerDataFilter {
+    } else if let value = value as? UniversalScanFilter {
       super.writeByte(152)
       super.writeValue(value.toList())
-    } else if let value = value as? UniversalManufacturerData {
+    } else if let value = value as? ManufacturerDataFilter {
       super.writeByte(153)
       super.writeValue(value.toList())
-    } else if let value = value as? AppleConnectionOptions {
+    } else if let value = value as? UniversalManufacturerData {
       super.writeByte(154)
       super.writeValue(value.toList())
-    } else if let value = value as? AndroidConnectionOptions {
+    } else if let value = value as? AppleConnectionOptions {
       super.writeByte(155)
       super.writeValue(value.toList())
-    } else if let value = value as? ConnectionPlatformConfig {
+    } else if let value = value as? AndroidConnectionOptions {
       super.writeByte(156)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralAndroidOptions {
+    } else if let value = value as? ConnectionPlatformConfig {
       super.writeByte(157)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralPlatformConfig {
+    } else if let value = value as? PeripheralAndroidOptions {
       super.writeByte(158)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralService {
+    } else if let value = value as? PeripheralPlatformConfig {
       super.writeByte(159)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralCharacteristic {
+    } else if let value = value as? PeripheralService {
       super.writeByte(160)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralDescriptor {
+    } else if let value = value as? PeripheralCharacteristic {
       super.writeByte(161)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralReadRequestResult {
+    } else if let value = value as? PeripheralDescriptor {
       super.writeByte(162)
       super.writeValue(value.toList())
-    } else if let value = value as? PeripheralWriteRequestResult {
+    } else if let value = value as? PeripheralReadRequestResult {
       super.writeByte(163)
+      super.writeValue(value.toList())
+    } else if let value = value as? PeripheralWriteRequestResult {
+      super.writeByte(164)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -2003,7 +2038,7 @@ class UniversalBlePlatformChannelSetup {
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
 protocol UniversalBleCallbackChannelProtocol {
   func onAvailabilityChanged(state stateArg: AvailabilityState, completion: @escaping (Result<Void, PigeonError>) -> Void)
-  func onPairStateChange(deviceId deviceIdArg: String, isPaired isPairedArg: Bool, error errorArg: String?, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onPairStateChange(deviceId deviceIdArg: String, state stateArg: PairingState, error errorArg: String?, completion: @escaping (Result<Void, PigeonError>) -> Void)
   func onScanResult(result resultArg: UniversalBleScanResult, completion: @escaping (Result<Void, PigeonError>) -> Void)
   func onValueChanged(deviceId deviceIdArg: String, characteristicId characteristicIdArg: String, value valueArg: FlutterStandardTypedData, timestamp timestampArg: Int64?, completion: @escaping (Result<Void, PigeonError>) -> Void)
   func onConnectionChanged(deviceId deviceIdArg: String, connected connectedArg: Bool, error errorArg: String?, completion: @escaping (Result<Void, PigeonError>) -> Void)
@@ -2037,10 +2072,10 @@ class UniversalBleCallbackChannel: UniversalBleCallbackChannelProtocol {
       }
     }
   }
-  func onPairStateChange(deviceId deviceIdArg: String, isPaired isPairedArg: Bool, error errorArg: String?, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+  func onPairStateChange(deviceId deviceIdArg: String, state stateArg: PairingState, error errorArg: String?, completion: @escaping (Result<Void, PigeonError>) -> Void) {
     let channelName: String = "dev.flutter.pigeon.universal_ble.UniversalBleCallbackChannel.onPairStateChange\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([deviceIdArg, isPairedArg, errorArg] as [Any?]) { response in
+    channel.sendMessage([deviceIdArg, stateArg, errorArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

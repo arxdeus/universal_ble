@@ -96,9 +96,9 @@ class _PeripheralDetailPageState extends State<PeripheralDetailPage> {
     _addLog("Value", data);
   }
 
-  void _handlePairingStateChange(bool isPaired) {
-    debugPrint('isPaired $isPaired');
-    _addLog("PairingStateChange - isPaired", isPaired);
+  void _handlePairingStateChange(PairingState state) {
+    debugPrint('pairingState $state');
+    _addLog("PairingStateChange - state", state.name);
   }
 
   void _handleConnectionParametersChange(

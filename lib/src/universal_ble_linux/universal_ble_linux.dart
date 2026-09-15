@@ -498,7 +498,9 @@ class UniversalBleLinux extends UniversalBlePlatform {
       await device.pair();
       return true;
     } catch (error) {
-      updatePairingState(deviceId, false);
+      // BlueZ surfaces a user refusal as AuthenticationRejected/Canceled;
+      // anything else is a plain bonding failure.
+      updatePairingState(deviceId, _pairingStateFromBlueZError(error));
       return false;
     }
   }
@@ -672,7 +674,10 @@ class UniversalBleLinux extends UniversalBlePlatform {
             updateConnection(device.address, device.connected);
             break;
           case BluezProperty.paired:
-            updatePairingState(device.address, device.paired);
+            updatePairingState(
+              device.address,
+              device.paired ? PairingState.paired : PairingState.unpaired,
+            );
             break;
           // Ignored these properties updates
           case BluezProperty.bonded:
@@ -715,6 +720,25 @@ class UniversalBleLinux extends UniversalBlePlatform {
       return false;
     });
   }
+}
+
+/// Maps a BlueZ `Device.Pair()` failure to a [PairingState].
+///
+/// BlueZ reports a refused/cancelled agent request through the
+/// `AuthenticationRejected` / `AuthenticationCanceled` D-Bus errors, which
+/// is the Linux equivalent of the user dismissing the pairing dialog.
+PairingState _pairingStateFromBlueZError(Object error) {
+  final message = error.toString().toLowerCase();
+  const userRefusalMarkers = [
+    'authenticationrejected',
+    'authenticationcanceled',
+    'authenticationcancelled',
+    'authenticationtimeout',
+  ];
+  for (final marker in userRefusalMarkers) {
+    if (message.contains(marker)) return PairingState.rejectedByUser;
+  }
+  return PairingState.failed;
 }
 
 class BluezProperty {

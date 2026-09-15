@@ -37,6 +37,9 @@ val ccdCharacteristic: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b3
 data class BondStateChange(
     val device: BluetoothDevice,
     val state: Int,
+    /// `BluetoothDevice.EXTRA_REASON`, or `BluetoothDevice.ERROR` when the
+    /// broadcast carries no reason (e.g. a successful bond).
+    val reason: Int,
 )
 
 
@@ -96,7 +99,41 @@ fun Intent.getBondStateChange(): BondStateChange? {
     if (action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return null
     val device = getBluetoothDeviceCompat() ?: return null
     val state = getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)
-    return BondStateChange(device, state)
+    val reason = getIntExtra(EXTRA_BOND_REASON, BluetoothDevice.ERROR)
+    return BondStateChange(device, state, reason)
+}
+
+/// `BluetoothDevice.EXTRA_REASON` is `@hide` in the SDK but is part of the
+/// publicly broadcast `ACTION_BOND_STATE_CHANGED` extras, and is the only
+/// way to tell a user-refused pairing dialog from a bond the peripheral
+/// itself could not complete.
+const val EXTRA_BOND_REASON = "android.bluetooth.device.extra.REASON"
+
+/// `BluetoothDevice.UNBOND_REASON_AUTH_REJECTED` (@hide).
+private const val UNBOND_REASON_AUTH_REJECTED = 2
+
+/// `BluetoothDevice.UNBOND_REASON_AUTH_CANCELED` (@hide).
+private const val UNBOND_REASON_AUTH_CANCELED = 3
+
+/// `BluetoothDevice.UNBOND_REASON_AUTH_TIMEOUT` (@hide) — the dialog was
+/// shown and simply ignored until it expired, which is a refusal too.
+private const val UNBOND_REASON_AUTH_TIMEOUT = 7
+
+/// Maps a bond state + unbond reason to the cross-platform [PairingState].
+fun BondStateChange.toPairingState(): PairingState = when (state) {
+    BluetoothDevice.BOND_BONDED -> PairingState.PAIRED
+    BluetoothDevice.BOND_BONDING -> PairingState.PAIRING
+    BluetoothDevice.BOND_NONE -> when (reason) {
+        UNBOND_REASON_AUTH_REJECTED,
+        UNBOND_REASON_AUTH_CANCELED,
+        UNBOND_REASON_AUTH_TIMEOUT,
+            -> PairingState.REJECTED_BY_USER
+
+        BluetoothDevice.ERROR -> PairingState.UNPAIRED
+        else -> PairingState.FAILED
+    }
+
+    else -> PairingState.FAILED
 }
 
 fun BluetoothDevice.isBonded(): Boolean = bondState == BluetoothDevice.BOND_BONDED

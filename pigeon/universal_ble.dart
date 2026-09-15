@@ -57,6 +57,36 @@ enum AvailabilityState {
 
 enum BleConnectionState { connected, disconnected, connecting, disconnecting }
 
+/// Outcome of a pairing (bonding) attempt.
+///
+/// Platforms only report "paired / not paired", which conflates two very
+/// different situations: the user explicitly refusing the system pairing
+/// dialog, and the peripheral being unable to bond at all. Consumers must
+/// be able to tell them apart: a refusal is a user decision and has to
+/// abort the flow, while an unsupported/failed bond may legitimately be
+/// ignored by apps that can work without a bond.
+enum PairingState {
+  /// Bond established (`BOND_BONDED`).
+  paired,
+
+  /// Bonding is in progress (`BOND_BONDING`); no outcome yet.
+  pairing,
+
+  /// The user rejected, cancelled or ignored the system pairing dialog.
+  ///
+  /// Android: `UNBOND_REASON_AUTH_REJECTED`, `UNBOND_REASON_AUTH_CANCELED`
+  /// or `UNBOND_REASON_AUTH_TIMEOUT`.
+  rejectedByUser,
+
+  /// Bonding failed for a non-user reason (peripheral refused SMP, link
+  /// lost, authentication failure, ...).
+  failed,
+
+  /// The bond was removed / the device is no longer paired, without an
+  /// attempt being in flight.
+  unpaired,
+}
+
 enum BleInputProperty { disabled, notification, indication }
 
 enum BleOutputProperty { withResponse, withoutResponse }
@@ -489,7 +519,11 @@ abstract class UniversalBlePlatformChannel {
 abstract class UniversalBleCallbackChannel {
   void onAvailabilityChanged(AvailabilityState state);
 
-  void onPairStateChange(String deviceId, bool isPaired, String? error);
+  void onPairStateChange(
+    String deviceId,
+    PairingState state,
+    String? error,
+  );
 
   void onScanResult(UniversalBleScanResult result);
 

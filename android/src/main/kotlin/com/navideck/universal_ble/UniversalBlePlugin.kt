@@ -1461,11 +1461,19 @@ class UniversalBlePlugin : UniversalBlePlatformChannel, BluetoothGattCallback(),
         }, gattCloseTimeoutMs)
     }
 
-    private fun onBondStateUpdate(deviceId: String, bonded: Boolean, error: String? = null) {
-        val future = pairResultFutures.remove(deviceId)
-        future?.let { it(Result.success(bonded)) }
+    private fun onBondStateUpdate(
+        deviceId: String,
+        state: PairingState,
+        error: String? = null,
+    ) {
+        // BOND_BONDING is only progress: the pending pair() future must stay
+        // open until an actual outcome arrives.
+        if (state != PairingState.PAIRING) {
+            val future = pairResultFutures.remove(deviceId)
+            future?.let { it(Result.success(state == PairingState.PAIRED)) }
+        }
         mainThreadHandler?.post {
-            callbackChannel?.onPairStateChange(deviceId, bonded, error) {}
+            callbackChannel?.onPairStateChange(deviceId, state, error) {}
         }
     }
 
@@ -1484,25 +1492,37 @@ class UniversalBlePlugin : UniversalBlePlatformChannel, BluetoothGattCallback(),
                     UniversalBleLogger.logError("No device found in ACTION_BOND_STATE_CHANGED intent")
                     return
                 }
-                // get pairing failed error
-                when (bondStateChange.state) {
-                    BluetoothDevice.BOND_BONDING -> {
-                        UniversalBleLogger.logVerbose("${bondStateChange.device.address} BOND_BONDING")
-                    }
+                // The unbond reason distinguishes a refused pairing dialog
+                // from a bond the peripheral could not complete.
+                val deviceId = bondStateChange.device.address
+                val pairingState = bondStateChange.toPairingState()
+                when (pairingState) {
+                    PairingState.PAIRING ->
+                        UniversalBleLogger.logVerbose("$deviceId BOND_BONDING")
 
-                    BluetoothDevice.BOND_BONDED -> {
-                        onBondStateUpdate(bondStateChange.device.address, true)
-                    }
+                    PairingState.PAIRED ->
+                        UniversalBleLogger.logVerbose("$deviceId BOND_BONDED")
 
-                    BluetoothDevice.ERROR -> {
-                        onBondStateUpdate(bondStateChange.device.address, false, "Failed to Pair")
-                    }
+                    PairingState.REJECTED_BY_USER ->
+                        UniversalBleLogger.logError(
+                            "$deviceId pairing rejected by user " +
+                                "(reason ${bondStateChange.reason})"
+                        )
 
-                    BluetoothDevice.BOND_NONE -> {
-                        UniversalBleLogger.logError("${bondStateChange.device.address} BOND_NONE")
-                        onBondStateUpdate(bondStateChange.device.address, false)
-                    }
+                    PairingState.FAILED, PairingState.UNPAIRED ->
+                        UniversalBleLogger.logError(
+                            "$deviceId BOND_NONE (reason ${bondStateChange.reason})"
+                        )
                 }
+                onBondStateUpdate(
+                    deviceId,
+                    pairingState,
+                    when (pairingState) {
+                        PairingState.REJECTED_BY_USER -> "Pairing rejected by user"
+                        PairingState.FAILED -> "Failed to Pair"
+                        else -> null
+                    },
+                )
             }
         }
     }

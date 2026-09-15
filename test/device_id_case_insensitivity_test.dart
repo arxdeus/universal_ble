@@ -99,8 +99,8 @@ void main() {
   test('pairingStateStream matches a device id reported in a different case', () async {
     final platform = _MockPlatform();
     final event = platform.pairingStateStream(upper).first;
-    platform.updatePairingState(lower, true);
-    expect(await event, isTrue);
+    platform.updatePairingState(lower, PairingState.paired);
+    expect(await event, PairingState.paired);
   });
 
   test('connect() completes when the platform reports the id in a different case', () async {
@@ -111,13 +111,13 @@ void main() {
 
   test('pairing-state dedup treats the two cases as one device', () async {
     final platform = _MockPlatform();
-    final events = <bool>[];
+    final events = <PairingState>[];
     final sub = platform.pairingStateStream(upper).listen(events.add);
-    platform.updatePairingState(lower, true); // first -> emits
-    platform.updatePairingState(upper, true); // same device+value, other case -> deduped, no second emit
+    platform.updatePairingState(lower, PairingState.paired); // first -> emits
+    platform.updatePairingState(upper, PairingState.paired); // same device+value, other case -> deduped, no second emit
     await Future<void>.delayed(const Duration(milliseconds: 20));
     await sub.cancel();
-    expect(events, [true]);
+    expect(events, [PairingState.paired]);
   });
 
   test('connection-parameters dedup treats the two cases as one device', () async {

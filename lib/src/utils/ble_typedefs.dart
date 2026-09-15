@@ -19,7 +19,8 @@ typedef OnScanResult = void Function(BleDevice scanResult);
 
 typedef OnAvailabilityChange = void Function(AvailabilityState state);
 
-typedef OnPairingStateChange = void Function(String deviceId, bool isPaired);
+typedef OnPairingStateChange =
+    void Function(String deviceId, PairingState state);
 
 typedef OnConnectionParametersChange =
     void Function(BleConnectionParametersUpdated update);

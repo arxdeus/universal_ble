@@ -238,6 +238,46 @@ enum class BleConnectionState(val raw: Int) {
   }
 }
 
+/**
+ * Outcome of a pairing (bonding) attempt.
+ *
+ * Platforms only report "paired / not paired", which conflates two very
+ * different situations: the user explicitly refusing the system pairing
+ * dialog, and the peripheral being unable to bond at all. Consumers must
+ * be able to tell them apart: a refusal is a user decision and has to
+ * abort the flow, while an unsupported/failed bond may legitimately be
+ * ignored by apps that can work without a bond.
+ */
+enum class PairingState(val raw: Int) {
+  /** Bond established (`BOND_BONDED`). */
+  PAIRED(0),
+  /** Bonding is in progress (`BOND_BONDING`); no outcome yet. */
+  PAIRING(1),
+  /**
+   * The user rejected, cancelled or ignored the system pairing dialog.
+   *
+   * Android: `UNBOND_REASON_AUTH_REJECTED`, `UNBOND_REASON_AUTH_CANCELED`
+   * or `UNBOND_REASON_AUTH_TIMEOUT`.
+   */
+  REJECTED_BY_USER(2),
+  /**
+   * Bonding failed for a non-user reason (peripheral refused SMP, link
+   * lost, authentication failure, ...).
+   */
+  FAILED(3),
+  /**
+   * The bond was removed / the device is no longer paired, without an
+   * attempt being in flight.
+   */
+  UNPAIRED(4);
+
+  companion object {
+    fun ofRaw(raw: Int): PairingState? {
+      return values().firstOrNull { it.raw == raw }
+    }
+  }
+}
+
 enum class BleInputProperty(val raw: Int) {
   DISABLED(0),
   NOTIFICATION(1),
@@ -1443,160 +1483,165 @@ private open class UniversalBlePigeonCodec : StandardMessageCodec() {
       }
       132.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          BleInputProperty.ofRaw(it.toInt())
+          PairingState.ofRaw(it.toInt())
         }
       }
       133.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          BleOutputProperty.ofRaw(it.toInt())
+          BleInputProperty.ofRaw(it.toInt())
         }
       }
       134.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          BleConnectionPriority.ofRaw(it.toInt())
+          BleOutputProperty.ofRaw(it.toInt())
         }
       }
       135.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          AndroidScanMode.ofRaw(it.toInt())
+          BleConnectionPriority.ofRaw(it.toInt())
         }
       }
       136.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          AndroidScanCallbackType.ofRaw(it.toInt())
+          AndroidScanMode.ofRaw(it.toInt())
         }
       }
       137.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          AndroidScanMatchMode.ofRaw(it.toInt())
+          AndroidScanCallbackType.ofRaw(it.toInt())
         }
       }
       138.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          AndroidScanNumOfMatches.ofRaw(it.toInt())
+          AndroidScanMatchMode.ofRaw(it.toInt())
         }
       }
       139.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          CharacteristicProperty.ofRaw(it.toInt())
+          AndroidScanNumOfMatches.ofRaw(it.toInt())
         }
       }
       140.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          PeripheralReadinessState.ofRaw(it.toInt())
+          CharacteristicProperty.ofRaw(it.toInt())
         }
       }
       141.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          PeripheralAttributePermission.ofRaw(it.toInt())
+          PeripheralReadinessState.ofRaw(it.toInt())
         }
       }
       142.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          PeripheralAdvertisingState.ofRaw(it.toInt())
+          PeripheralAttributePermission.ofRaw(it.toInt())
         }
       }
       143.toByte() -> {
         return (readValue(buffer) as Long?)?.let {
-          UniversalBleErrorCode.ofRaw(it.toInt())
+          PeripheralAdvertisingState.ofRaw(it.toInt())
         }
       }
       144.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalBleScanResult.fromList(it)
+        return (readValue(buffer) as Long?)?.let {
+          UniversalBleErrorCode.ofRaw(it.toInt())
         }
       }
       145.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalBleService.fromList(it)
+          UniversalBleScanResult.fromList(it)
         }
       }
       146.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalBleCharacteristic.fromList(it)
+          UniversalBleService.fromList(it)
         }
       }
       147.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalBleDescriptor.fromList(it)
+          UniversalBleCharacteristic.fromList(it)
         }
       }
       148.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          BleConnectionParametersUpdated.fromList(it)
+          UniversalBleDescriptor.fromList(it)
         }
       }
       149.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AndroidOptions.fromList(it)
+          BleConnectionParametersUpdated.fromList(it)
         }
       }
       150.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalScanConfig.fromList(it)
+          AndroidOptions.fromList(it)
         }
       }
       151.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalScanFilter.fromList(it)
+          UniversalScanConfig.fromList(it)
         }
       }
       152.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ManufacturerDataFilter.fromList(it)
+          UniversalScanFilter.fromList(it)
         }
       }
       153.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          UniversalManufacturerData.fromList(it)
+          ManufacturerDataFilter.fromList(it)
         }
       }
       154.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AppleConnectionOptions.fromList(it)
+          UniversalManufacturerData.fromList(it)
         }
       }
       155.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          AndroidConnectionOptions.fromList(it)
+          AppleConnectionOptions.fromList(it)
         }
       }
       156.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          ConnectionPlatformConfig.fromList(it)
+          AndroidConnectionOptions.fromList(it)
         }
       }
       157.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PeripheralAndroidOptions.fromList(it)
+          ConnectionPlatformConfig.fromList(it)
         }
       }
       158.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PeripheralPlatformConfig.fromList(it)
+          PeripheralAndroidOptions.fromList(it)
         }
       }
       159.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PeripheralService.fromList(it)
+          PeripheralPlatformConfig.fromList(it)
         }
       }
       160.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PeripheralCharacteristic.fromList(it)
+          PeripheralService.fromList(it)
         }
       }
       161.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PeripheralDescriptor.fromList(it)
+          PeripheralCharacteristic.fromList(it)
         }
       }
       162.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          PeripheralReadRequestResult.fromList(it)
+          PeripheralDescriptor.fromList(it)
         }
       }
       163.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          PeripheralReadRequestResult.fromList(it)
+        }
+      }
+      164.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           PeripheralWriteRequestResult.fromList(it)
         }
@@ -1618,132 +1663,136 @@ private open class UniversalBlePigeonCodec : StandardMessageCodec() {
         stream.write(131)
         writeValue(stream, value.raw.toLong())
       }
-      is BleInputProperty -> {
+      is PairingState -> {
         stream.write(132)
         writeValue(stream, value.raw.toLong())
       }
-      is BleOutputProperty -> {
+      is BleInputProperty -> {
         stream.write(133)
         writeValue(stream, value.raw.toLong())
       }
-      is BleConnectionPriority -> {
+      is BleOutputProperty -> {
         stream.write(134)
         writeValue(stream, value.raw.toLong())
       }
-      is AndroidScanMode -> {
+      is BleConnectionPriority -> {
         stream.write(135)
         writeValue(stream, value.raw.toLong())
       }
-      is AndroidScanCallbackType -> {
+      is AndroidScanMode -> {
         stream.write(136)
         writeValue(stream, value.raw.toLong())
       }
-      is AndroidScanMatchMode -> {
+      is AndroidScanCallbackType -> {
         stream.write(137)
         writeValue(stream, value.raw.toLong())
       }
-      is AndroidScanNumOfMatches -> {
+      is AndroidScanMatchMode -> {
         stream.write(138)
         writeValue(stream, value.raw.toLong())
       }
-      is CharacteristicProperty -> {
+      is AndroidScanNumOfMatches -> {
         stream.write(139)
         writeValue(stream, value.raw.toLong())
       }
-      is PeripheralReadinessState -> {
+      is CharacteristicProperty -> {
         stream.write(140)
         writeValue(stream, value.raw.toLong())
       }
-      is PeripheralAttributePermission -> {
+      is PeripheralReadinessState -> {
         stream.write(141)
         writeValue(stream, value.raw.toLong())
       }
-      is PeripheralAdvertisingState -> {
+      is PeripheralAttributePermission -> {
         stream.write(142)
         writeValue(stream, value.raw.toLong())
       }
-      is UniversalBleErrorCode -> {
+      is PeripheralAdvertisingState -> {
         stream.write(143)
         writeValue(stream, value.raw.toLong())
       }
-      is UniversalBleScanResult -> {
+      is UniversalBleErrorCode -> {
         stream.write(144)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is UniversalBleService -> {
+      is UniversalBleScanResult -> {
         stream.write(145)
         writeValue(stream, value.toList())
       }
-      is UniversalBleCharacteristic -> {
+      is UniversalBleService -> {
         stream.write(146)
         writeValue(stream, value.toList())
       }
-      is UniversalBleDescriptor -> {
+      is UniversalBleCharacteristic -> {
         stream.write(147)
         writeValue(stream, value.toList())
       }
-      is BleConnectionParametersUpdated -> {
+      is UniversalBleDescriptor -> {
         stream.write(148)
         writeValue(stream, value.toList())
       }
-      is AndroidOptions -> {
+      is BleConnectionParametersUpdated -> {
         stream.write(149)
         writeValue(stream, value.toList())
       }
-      is UniversalScanConfig -> {
+      is AndroidOptions -> {
         stream.write(150)
         writeValue(stream, value.toList())
       }
-      is UniversalScanFilter -> {
+      is UniversalScanConfig -> {
         stream.write(151)
         writeValue(stream, value.toList())
       }
-      is ManufacturerDataFilter -> {
+      is UniversalScanFilter -> {
         stream.write(152)
         writeValue(stream, value.toList())
       }
-      is UniversalManufacturerData -> {
+      is ManufacturerDataFilter -> {
         stream.write(153)
         writeValue(stream, value.toList())
       }
-      is AppleConnectionOptions -> {
+      is UniversalManufacturerData -> {
         stream.write(154)
         writeValue(stream, value.toList())
       }
-      is AndroidConnectionOptions -> {
+      is AppleConnectionOptions -> {
         stream.write(155)
         writeValue(stream, value.toList())
       }
-      is ConnectionPlatformConfig -> {
+      is AndroidConnectionOptions -> {
         stream.write(156)
         writeValue(stream, value.toList())
       }
-      is PeripheralAndroidOptions -> {
+      is ConnectionPlatformConfig -> {
         stream.write(157)
         writeValue(stream, value.toList())
       }
-      is PeripheralPlatformConfig -> {
+      is PeripheralAndroidOptions -> {
         stream.write(158)
         writeValue(stream, value.toList())
       }
-      is PeripheralService -> {
+      is PeripheralPlatformConfig -> {
         stream.write(159)
         writeValue(stream, value.toList())
       }
-      is PeripheralCharacteristic -> {
+      is PeripheralService -> {
         stream.write(160)
         writeValue(stream, value.toList())
       }
-      is PeripheralDescriptor -> {
+      is PeripheralCharacteristic -> {
         stream.write(161)
         writeValue(stream, value.toList())
       }
-      is PeripheralReadRequestResult -> {
+      is PeripheralDescriptor -> {
         stream.write(162)
         writeValue(stream, value.toList())
       }
-      is PeripheralWriteRequestResult -> {
+      is PeripheralReadRequestResult -> {
         stream.write(163)
+        writeValue(stream, value.toList())
+      }
+      is PeripheralWriteRequestResult -> {
+        stream.write(164)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -2313,12 +2362,12 @@ class UniversalBleCallbackChannel(private val binaryMessenger: BinaryMessenger, 
       } 
     }
   }
-  fun onPairStateChange(deviceIdArg: String, isPairedArg: Boolean, errorArg: String?, callback: (Result<Unit>) -> Unit)
+  fun onPairStateChange(deviceIdArg: String, stateArg: PairingState, errorArg: String?, callback: (Result<Unit>) -> Unit)
 {
     val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
     val channelName = "dev.flutter.pigeon.universal_ble.UniversalBleCallbackChannel.onPairStateChange$separatedMessageChannelSuffix"
     val channel = BasicMessageChannel<Any?>(binaryMessenger, channelName, codec)
-    channel.send(listOf(deviceIdArg, isPairedArg, errorArg)) {
+    channel.send(listOf(deviceIdArg, stateArg, errorArg)) {
       if (it is List<*>) {
         if (it.size > 1) {
           callback(Result.failure(FlutterError(it[0] as String, it[1] as String, it[2] as String?)))

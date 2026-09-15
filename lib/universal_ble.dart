@@ -22,6 +22,7 @@ export 'package:universal_ble/src/universal_ble.g.dart'
         BleLogLevel,
         AvailabilityState,
         BleConnectionState,
+        PairingState,
         BleInputProperty,
         BleOutputProperty,
         BleConnectionPriority,
