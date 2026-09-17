@@ -482,8 +482,16 @@ To discover encrypted characteristics, make sure your device is not paired and u
 
 ```dart
 // Get pairing state updates using stream
-bleDevice.pairingStateStream.listen((bool paired) {
-  // Handle pairing state change
+bleDevice.pairingStateStream.listen((PairingState state) {
+  switch (state) {
+    case PairingState.paired:
+    case PairingState.pairing:
+    // The user refused, cancelled or ignored the system pairing dialog.
+    case PairingState.rejectedByUser:
+    // The peripheral could not bond (unsupported, link lost, ...).
+    case PairingState.failed:
+    case PairingState.unpaired:
+  }
 });
 ```
 

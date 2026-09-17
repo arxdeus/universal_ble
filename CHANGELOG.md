@@ -1,4 +1,9 @@
 ## 3.0.0
+* **Breaking:** `pairingStateStream`, `onPairingStateChange` and the native `onPairStateChange` callback now emit a `PairingState` (`paired` / `pairing` / `rejectedByUser` / `failed` / `unpaired`) instead of a `bool`, so a user refusing the system pairing dialog can be told apart from a device that cannot bond.
+* Android: read `BluetoothDevice.EXTRA_REASON` from `ACTION_BOND_STATE_CHANGED` to map rejected/cancelled/timed-out pairing to `PairingState.rejectedByUser`, and an intentional unpair to `PairingState.unpaired`.
+* Android: `BOND_BONDING` no longer completes a pending `pair()` future; it is surfaced as `PairingState.pairing` progress.
+* Windows/Linux: map the native pairing result (`PairingCanceled` / `RejectedByHandler` / `AuthenticationTimeout`, BlueZ `AuthenticationRejected` / `Canceled` / `Timeout`) to `PairingState.rejectedByUser`, and emit `PairingState.unpaired` after a successful `unpair()`.
+* Apple: derive the pairing outcome from the encrypted operation's error, since CoreBluetooth has no bonding API.
 * **Breaking:** Add `QueueType.auto` which auto-selects the best queueing strategy per platform: Android uses a per-device queue, all other platforms run commands in parallel. It is now the default for both `UniversalBle` and `UniversalBlePeripheral`, replacing the previous `QueueType.global` default.
 * iOS/macOS: Handle write-without-response transmit buffer backpressure
 * iOS/macOS: complete concurrent reads, descriptor operations, notification changes, and RSSI reads one callback at a time.
