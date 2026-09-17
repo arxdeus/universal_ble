@@ -117,7 +117,14 @@ private const val UNBOND_REASON_AUTH_CANCELED = 3
 
 /// `BluetoothDevice.UNBOND_REASON_AUTH_TIMEOUT` (@hide) — the dialog was
 /// shown and simply ignored until it expired, which is a refusal too.
-private const val UNBOND_REASON_AUTH_TIMEOUT = 7
+private const val UNBOND_REASON_AUTH_TIMEOUT = 6
+
+/// `BluetoothDevice.UNBOND_REASON_REMOVED` (@hide) — the bond was removed
+/// intentionally, e.g. via `removeBond()` or from the system settings.
+private const val UNBOND_REASON_REMOVED = 9
+
+/// Value carried by the stable-state broadcast when no failure occurred.
+private const val UNBOND_REASON_NONE = 0
 
 /// Maps a bond state + unbond reason to the cross-platform [PairingState].
 fun BondStateChange.toPairingState(): PairingState = when (state) {
@@ -129,7 +136,11 @@ fun BondStateChange.toPairingState(): PairingState = when (state) {
         UNBOND_REASON_AUTH_TIMEOUT,
             -> PairingState.REJECTED_BY_USER
 
-        BluetoothDevice.ERROR -> PairingState.UNPAIRED
+        BluetoothDevice.ERROR,
+        UNBOND_REASON_NONE,
+        UNBOND_REASON_REMOVED,
+            -> PairingState.UNPAIRED
+
         else -> PairingState.FAILED
     }
 
