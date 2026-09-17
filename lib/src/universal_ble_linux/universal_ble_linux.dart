@@ -511,6 +511,10 @@ class UniversalBleLinux extends UniversalBlePlatform {
     if (device.paired) {
       // await device.cancelPairing();
       await _activeAdapter?.removeDevice(device);
+      // Removing the device drops the BlueZ object, so no `Paired` property
+      // change follows; report the removed bond explicitly to keep
+      // pairingStateStream consistent with the other platforms.
+      updatePairingState(deviceId, PairingState.unpaired);
     }
   }
 
