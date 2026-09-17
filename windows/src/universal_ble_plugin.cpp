@@ -1131,7 +1131,8 @@ fire_and_forget UniversalBlePlugin::PairAsync(
           co_await device_information.Pairing().PairAsync();
       UniversalBleLogger::LogInfo("PairLog: Received pairing status");
       const DevicePairingResultStatus status = pair_result.Status();
-      bool is_paired = status == DevicePairingResultStatus::Paired;
+      bool is_paired = status == DevicePairingResultStatus::Paired ||
+                       status == DevicePairingResultStatus::AlreadyPaired;
       result(is_paired);
 
       const PairingState pairing_state =
@@ -1192,7 +1193,8 @@ fire_and_forget UniversalBlePlugin::CustomPairAsync(
           protection_level);
       UniversalBleLogger::LogInfo("PairLog: Got Pair Result");
       const DevicePairingResultStatus status = pair_result.Status();
-      bool is_paired = status == DevicePairingResultStatus::Paired;
+      bool is_paired = status == DevicePairingResultStatus::Paired ||
+                       status == DevicePairingResultStatus::AlreadyPaired;
       result(is_paired);
 
       const PairingState pairing_state =

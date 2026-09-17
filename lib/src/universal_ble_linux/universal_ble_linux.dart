@@ -507,12 +507,20 @@ class UniversalBleLinux extends UniversalBlePlatform {
 
   @override
   Future<void> unpair(String deviceId) async {
+    await _ensureInitialized();
+    final adapter = _activeAdapter;
+    if (adapter == null) {
+      throw UniversalBleException(
+        code: UniversalBleErrorCode.bluetoothNotAvailable,
+        message: 'No Bluetooth adapter available for unpairing',
+      );
+    }
     BlueZDevice device = _findDeviceById(deviceId);
     if (device.paired) {
       // await device.cancelPairing();
-      await _activeAdapter?.removeDevice(device);
+      await adapter.removeDevice(device);
       // Removing the device drops the BlueZ object, so no `Paired` property
-      // change follows; report the removed bond explicitly to keep
+      // change is guaranteed; report the removed bond explicitly to keep
       // pairingStateStream consistent with the other platforms.
       updatePairingState(deviceId, PairingState.unpaired);
     }

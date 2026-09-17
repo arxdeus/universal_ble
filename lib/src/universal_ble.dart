@@ -607,13 +607,12 @@ class UniversalBle {
         ? error.code
         : UniversalBleErrorParser.getCode(error);
     return switch (code) {
-      // The user dismissed or rejected the system pairing dialog, or let
-      // it time out: the peripheral demanded authentication and never
-      // got it.
+      // Authentication failures and timeouts do not identify a user decision.
+      UniversalBleErrorCode.pairingCancelled => PairingState.rejectedByUser,
       UniversalBleErrorCode.authenticationFailure ||
       UniversalBleErrorCode.insufficientAuthentication ||
-      UniversalBleErrorCode.pairingCancelled ||
-      UniversalBleErrorCode.pairingTimeout => PairingState.rejectedByUser,
+      UniversalBleErrorCode.insufficientKeySize ||
+      UniversalBleErrorCode.pairingTimeout ||
       // accessDenied is a permission problem on the app's side, not a
       // decision made by the user in the pairing dialog.
       UniversalBleErrorCode.accessDenied ||

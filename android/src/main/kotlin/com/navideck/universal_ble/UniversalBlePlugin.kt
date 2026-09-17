@@ -1160,10 +1160,11 @@ class UniversalBlePlugin : UniversalBlePlatformChannel, BluetoothGattCallback(),
     override fun pair(deviceId: String, callback: (Result<Boolean>) -> Unit) {
         try {
             val remoteDevice = bluetoothManager.adapter.getRemoteDevice(deviceId)
-            val pendingFuture = pairResultFutures.remove(deviceId)
+            val pendingFuture = pairResultFutures[deviceId]
 
             // If already paired, return and complete pending futures
             if (remoteDevice.isBonded()) {
+                pairResultFutures.remove(deviceId)
                 pendingFuture?.let { it(Result.success(true)) }
                 callback(Result.success(true))
                 return

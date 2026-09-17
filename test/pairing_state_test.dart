@@ -207,19 +207,17 @@ void main() {
           UniversalBleException(code: code, message: code.name),
         );
 
-    test('authentication errors mean the user refused the dialog', () {
-      expect(
-        stateFor(UniversalBleErrorCode.authenticationFailure),
-        PairingState.rejectedByUser,
-      );
-      expect(
-        stateFor(UniversalBleErrorCode.insufficientAuthentication),
-        PairingState.rejectedByUser,
-      );
-      expect(
-        stateFor(UniversalBleErrorCode.pairingCancelled),
-        PairingState.rejectedByUser,
-      );
+    test('ambiguous authentication errors are not user refusals', () {
+      for (final code in [
+        UniversalBleErrorCode.authenticationFailure,
+        UniversalBleErrorCode.insufficientAuthentication,
+        UniversalBleErrorCode.insufficientKeySize,
+        UniversalBleErrorCode.pairingTimeout,
+      ]) {
+        expect(stateFor(code), PairingState.failed, reason: code.name);
+      }
+      expect(stateFor(UniversalBleErrorCode.pairingCancelled),
+          PairingState.rejectedByUser);
     });
 
     test('a peripheral that cannot bond is a plain failure', () {

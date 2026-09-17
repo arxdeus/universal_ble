@@ -94,7 +94,7 @@ namespace universal_ble
 			case DevicePairingResultStatus::AuthenticationTimeout:
 				return PairingState::kRejectedByUser;
 			case DevicePairingResultStatus::NotPaired:
-				return PairingState::kUnpaired;
+				return PairingState::kFailed;
 			default:
 				return PairingState::kFailed;
 		}

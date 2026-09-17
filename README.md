@@ -483,17 +483,19 @@ To discover encrypted characteristics, make sure your device is not paired and u
 ```dart
 // Get pairing state updates using stream
 bleDevice.pairingStateStream.listen((PairingState state) {
-  switch (state) {
-    case PairingState.paired:
-    case PairingState.pairing:
-    // The user refused, cancelled or ignored the system pairing dialog.
-    case PairingState.rejectedByUser:
-    // The peripheral could not bond (unsupported, link lost, ...).
-    case PairingState.failed:
-    case PairingState.unpaired:
+  if (state == PairingState.rejectedByUser) {
+    // Handle a platform-reported cancellation or rejection.
+  } else if (state == PairingState.failed) {
+    // Handle a failure not attributable to a user decision.
   }
 });
 ```
+
+Apple and Web infer pairing from an encrypted operation, not a bond-state API.
+Authentication errors and encryption timeouts do not prove user rejection.
+Use a `pairingCommand` known to require encryption; successful unencrypted
+operations do not prove bonding. Unpair is unsupported on Apple and Web.
+Only Android currently reports the `pairing` progress event.
 
 #### Unpair
 
