@@ -1035,6 +1035,15 @@ UniversalBlePlugin::UnPair(const std::string &device_id) {
     if (status != DeviceUnpairingResultStatus::Unpaired) {
       return create_flutter_error_from_unpairing_status(status);
     }
+
+    // Android reports the removed bond through ACTION_BOND_STATE_CHANGED and
+    // Linux through the BlueZ `Paired` property; Windows has no such
+    // broadcast, so emit it here to keep pairingStateStream consistent.
+    ui_thread_handler_.Post([device_id] {
+      callback_channel->OnPairStateChange(device_id, PairingState::kUnpaired,
+                                          nullptr, SuccessCallback,
+                                          ErrorCallback);
+    });
     return std::nullopt;
   } catch (const FlutterError &err) {
     return err;
