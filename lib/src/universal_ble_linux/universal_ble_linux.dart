@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:bluez/bluez.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:universal_ble/src/models/model_exports.dart';
 import 'package:universal_ble/src/utils/universal_ble_error_parser.dart';
 import 'package:universal_ble/src/utils/universal_ble_filter_util.dart';
@@ -500,7 +500,7 @@ class UniversalBleLinux extends UniversalBlePlatform {
     } catch (error) {
       // BlueZ surfaces a user refusal as AuthenticationRejected/Canceled;
       // anything else is a plain bonding failure.
-      updatePairingState(deviceId, _pairingStateFromBlueZError(error));
+      updatePairingState(deviceId, pairingStateFromBlueZError(error));
       return false;
     }
   }
@@ -739,16 +739,12 @@ class UniversalBleLinux extends UniversalBlePlatform {
 /// BlueZ reports a refused/cancelled agent request through the
 /// `AuthenticationRejected` / `AuthenticationCanceled` D-Bus errors, which
 /// is the Linux equivalent of the user dismissing the pairing dialog.
-PairingState _pairingStateFromBlueZError(Object error) {
-  final message = error.toString().toLowerCase();
-  const userRefusalMarkers = [
-    'authenticationrejected',
-    'authenticationcanceled',
-    'authenticationcancelled',
-    'authenticationtimeout',
-  ];
-  for (final marker in userRefusalMarkers) {
-    if (message.contains(marker)) return PairingState.rejectedByUser;
+@visibleForTesting
+PairingState pairingStateFromBlueZError(Object error) {
+  if (error is BlueZAuthenticationRejectedException ||
+      error is BlueZAuthenticationCanceledException ||
+      error is BlueZAuthenticationTimeoutException) {
+    return PairingState.rejectedByUser;
   }
   return PairingState.failed;
 }

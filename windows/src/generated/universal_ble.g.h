@@ -87,24 +87,24 @@ enum class BleConnectionState {
 
 // Outcome of a pairing (bonding) attempt.
 //
-// Platforms only report "paired / not paired", which conflates two very
-// different situations: the user explicitly refusing the system pairing
-// dialog, and the peripheral being unable to bond at all. Consumers must
-// be able to tell them apart: a refusal is a user decision and has to
-// abort the flow, while an unsupported/failed bond may legitimately be
-// ignored by apps that can work without a bond.
+// Availability and precision depend on the platform. Pairing-specific native
+// results can distinguish rejection/cancellation from other failures, but
+// do not necessarily identify a local user action. Apple/Web infer outcomes
+// from an encrypted operation rather than observing the bond directly.
 enum class PairingState {
   // Bond established (`BOND_BONDED`).
   kPaired = 0,
   // Bonding is in progress (`BOND_BONDING`); no outcome yet.
   kPairing = 1,
-  // The user rejected, cancelled or ignored the system pairing dialog.
+  // The platform reported pairing rejection, cancellation or a selected
+  // authentication timeout. This does not prove a local user action: a peer
+  // or agent may also cause these native results.
   //
   // Android: `UNBOND_REASON_AUTH_REJECTED`, `UNBOND_REASON_AUTH_CANCELED`
   // or `UNBOND_REASON_AUTH_TIMEOUT`.
   kRejectedByUser = 2,
-  // Bonding failed for a non-user reason (peripheral refused SMP, link
-  // lost, authentication failure, ...).
+  // Bonding failed without a pairing-specific rejection/cancellation result.
+  // Includes authentication errors whose cause cannot be attributed.
   kFailed = 3,
   // The bond was removed / the device is no longer paired, without an
   // attempt being in flight.

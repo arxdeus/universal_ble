@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 import 'package:universal_ble/universal_ble.dart';
 
 /// Minimal platform used to drive [UniversalBlePlatform.updatePairingState].
@@ -196,6 +195,19 @@ void main() {
     await sub.cancel();
 
     expect(states, [PairingState.paired, PairingState.unpaired]);
+  });
+
+  test('unknown Pigeon error indexes do not mask the original failure', () {
+    for (final code in ['-1', '999999', 'not-a-number']) {
+      expect(UniversalBle.pairingStateFromError(PlatformException(code: code)),
+          isNull);
+    }
+    expect(
+      UniversalBle.pairingStateFromError(PlatformException(
+        code: UniversalBleErrorCode.insufficientAuthentication.index.toString(),
+      )),
+      PairingState.failed,
+    );
   });
 
   group('Apple pairing outcome is derived from the operation error', () {

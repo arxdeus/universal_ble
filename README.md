@@ -496,6 +496,15 @@ Authentication errors and encryption timeouts do not prove user rejection.
 Use a `pairingCommand` known to require encryption; successful unencrypted
 operations do not prove bonding. Unpair is unsupported on Apple and Web.
 Only Android currently reports the `pairing` progress event.
+Without `pairingCommand`, Apple/Web use a best-effort read probe that suppresses
+read errors; it does not provide a reliable pairing outcome.
+
+`rejectedByUser` groups platform-reported rejection, cancellation and selected
+authentication-timeout statuses (Android, Windows and Linux). These native
+statuses do not always identify whether the local user, a remote peer or an
+agent caused the rejection. Do not treat this value as proof of a local user
+interaction. Apple/Web authentication errors are classified conservatively as
+`failed` because they do not provide the same pairing-specific result.
 
 #### Unpair
 

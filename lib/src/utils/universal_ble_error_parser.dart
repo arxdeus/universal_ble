@@ -9,6 +9,10 @@ class UniversalBleErrorParser {
     if (error is PlatformException) {
       int? errorCodeInt = int.tryParse((error).code);
       if (errorCodeInt != null) {
+        // Pigeon sends enum indexes, not native ATT status codes.
+        if (errorCodeInt < 0 || errorCodeInt >= UniversalBleErrorCode.values.length) {
+          return UniversalBleErrorCode.unknownError;
+        }
         return UniversalBleErrorCode.values[errorCodeInt];
       }
     }
