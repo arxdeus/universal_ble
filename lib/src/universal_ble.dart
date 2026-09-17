@@ -67,9 +67,11 @@ class UniversalBle {
 
   /// Pairing state stream.
   ///
-  /// Emits the outcome of bonding attempts, including
-  /// [PairingState.rejectedByUser] when the user refuses, cancels or
-  /// ignores the system pairing dialog.
+  /// Reports platform pairing updates. See [PairingState] for the limits of
+  /// interpreting rejection and cancellation on each platform.
+  /// Subscribe before calling [pair]. Events and the [pair] future are
+  /// delivered independently, with no guaranteed ordering. Not every call
+  /// emits an event (for example, an already paired device).
   static Stream<PairingState> pairingStateStream(String deviceId) =>
       _platform.pairingStateStream(deviceId);
 
@@ -548,6 +550,12 @@ class UniversalBle {
   /// Pair a device.
   ///
   /// It throws error if pairing fails.
+  ///
+  /// This future does not wait for [pairingStateStream] listeners to receive
+  /// an update. Subscribe before calling this method and handle state updates
+  /// independently of future completion. A failure does not guarantee that
+  /// a state event has arrived, or will arrive; do not await a mandatory event
+  /// after catching an error. The stream is not a per-attempt result channel.
   ///
   /// On `Apple` and `Web`, it only works on devices with encrypted characteristics.
   /// It is advised to pass a pairingCommand with an encrypted read or write characteristic.

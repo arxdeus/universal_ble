@@ -152,12 +152,10 @@ extension Error {
     }
 }
 
-/// Maps a CoreBluetooth `NSError` to a [UniversalBleErrorCode].
+/// Maps only pairing-related CoreBluetooth errors.
 ///
-/// Apple has no bonding API: pairing is triggered by touching an encrypted
-/// characteristic, so the ATT error of that operation is the only signal of
-/// how the pairing ceremony ended. Returns `nil` for errors outside the
-/// CoreBluetooth domains, so the caller can fall back to its own codes.
+/// Unrelated operation errors return nil so toFlutterError preserves the
+/// existing fallback mapping instead of changing read/write/connection errors.
 func mapCoreBluetoothError(_ error: NSError) -> UniversalBleErrorCode? {
     if error.domain == CBATTErrorDomain {
         switch CBATTError.Code(rawValue: error.code) {
@@ -169,18 +167,8 @@ func mapCoreBluetoothError(_ error: NSError) -> UniversalBleErrorCode? {
             return .insufficientEncryption
         case .insufficientEncryptionKeySize:
             return .insufficientKeySize
-        case .readNotPermitted:
-            return .readNotPermitted
-        case .writeNotPermitted:
-            return .writeNotPermitted
-        case .requestNotSupported:
-            return .operationNotSupported
-        case .attributeNotFound:
-            return .characteristicNotFound
-        case .invalidAttributeValueLength:
-            return .illegalArgument
         default:
-            return .failed
+            return nil
         }
     }
 
@@ -190,14 +178,8 @@ func mapCoreBluetoothError(_ error: NSError) -> UniversalBleErrorCode? {
             return .notPaired
         case .encryptionTimedOut:
             return .pairingTimeout
-        case .peripheralDisconnected, .connectionTimeout:
-            return .deviceDisconnected
-        case .operationCancelled:
-            return .operationCancelled
-        case .connectionLimitReached:
-            return .failed
         default:
-            return .failed
+            return nil
         }
     }
 

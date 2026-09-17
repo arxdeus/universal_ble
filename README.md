@@ -480,6 +480,14 @@ To discover encrypted characteristics, make sure your device is not paired and u
 
 #### Pairing state changes
 
+Subscribe before calling `pair()`. Pairing updates and the `pair()` future are
+independent: there is no guaranteed delivery order. In particular, on Windows
+an attempt can complete before its state event reaches Dart. Handle stream
+updates separately from the future's success/error handler; do not assume a
+cached state in `catch` belongs to that attempt, or wait for a mandatory event.
+Some paths (such as already paired devices or early errors) produce no event.
+The stream has no attempt identifier and is not a per-attempt result channel.
+
 ```dart
 // Get pairing state updates using stream
 bleDevice.pairingStateStream.listen((PairingState state) {
