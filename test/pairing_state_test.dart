@@ -158,6 +158,46 @@ void main() {
     expect(received, PairingState.rejectedByUser);
   });
 
+  test('a repeated refusal is reported for every attempt', () async {
+    // Windows and Apple have no `pairing` progress event, so two refused
+    // attempts in a row produce two identical states; deduping them would
+    // leave the retried pair() without any outcome.
+    final platform = _PairingPlatform();
+    final states = <PairingState>[];
+    final sub = platform.pairingStateStream(deviceId).listen(states.add);
+
+    platform.updatePairingState(deviceId, PairingState.rejectedByUser);
+    platform.updatePairingState(deviceId, PairingState.rejectedByUser);
+    platform.updatePairingState(deviceId, PairingState.failed);
+    platform.updatePairingState(deviceId, PairingState.failed);
+
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await sub.cancel();
+
+    expect(states, [
+      PairingState.rejectedByUser,
+      PairingState.rejectedByUser,
+      PairingState.failed,
+      PairingState.failed,
+    ]);
+  });
+
+  test('a steady bond is still reported only once', () async {
+    final platform = _PairingPlatform();
+    final states = <PairingState>[];
+    final sub = platform.pairingStateStream(deviceId).listen(states.add);
+
+    platform.updatePairingState(deviceId, PairingState.paired);
+    platform.updatePairingState(deviceId, PairingState.paired);
+    platform.updatePairingState(deviceId, PairingState.unpaired);
+    platform.updatePairingState(deviceId, PairingState.unpaired);
+
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await sub.cancel();
+
+    expect(states, [PairingState.paired, PairingState.unpaired]);
+  });
+
   group('Apple pairing outcome is derived from the operation error', () {
     // Apple exposes no bonding API: pairing happens implicitly when an
     // encrypted characteristic is touched, so the only signal about a

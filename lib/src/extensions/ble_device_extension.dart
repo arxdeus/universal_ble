@@ -6,7 +6,9 @@ extension BleDeviceExtension on BleDevice {
   /// A stream of [bool] that emits connection status changes for the device.
   Stream<bool> get connectionStream => UniversalBle.connectionStream(deviceId);
 
-  /// A stream of [bool] that emits pairing status changes for the device.
+  /// A stream of [PairingState] that emits pairing outcomes for the device,
+  /// including [PairingState.rejectedByUser] when the user refuses the
+  /// system pairing dialog.
   Stream<PairingState> get pairingStateStream =>
       UniversalBle.pairingStateStream(deviceId);
 

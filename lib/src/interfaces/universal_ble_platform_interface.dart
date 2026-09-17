@@ -250,7 +250,13 @@ abstract class UniversalBlePlatform {
     // Key by the canonical id so the same device reported in another case doesn't create a second entry and
     // slip past this dedup. The emitted deviceId keeps the platform's case.
     final key = deviceId.toLowerCase();
-    if (_pairStateMap[key] == state) return;
+    // Only `paired` / `unpaired` describe a steady bond that platforms
+    // re-announce, so only those are deduped. The outcome of an attempt
+    // must always be delivered: platforms without a `pairing` progress
+    // event (Windows, Apple) would otherwise swallow a second identical
+    // refusal, leaving a retried pair() without any result.
+    const steadyStates = {PairingState.paired, PairingState.unpaired};
+    if (steadyStates.contains(state) && _pairStateMap[key] == state) return;
     _pairStateMap[key] = state;
 
     _pairStateStreamController.add((deviceId: deviceId, state: state));
