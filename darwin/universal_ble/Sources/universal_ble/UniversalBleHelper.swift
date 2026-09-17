@@ -143,9 +143,65 @@ extension Error {
         let nsError = self as NSError
         let errorCode: String = .init(nsError.code)
         let errorDescription: String = nsError.localizedDescription
-        let mappedCode = mapErrorCodeToEnum(errorCode)
+        // CoreBluetooth reports failures as NSError with a numeric code in a
+        // CoreBluetooth domain, never as one of the textual codes above, so
+        // the domain has to be inspected before falling back to the string
+        // mapping (which only ever matches errors we raised ourselves).
+        let mappedCode = mapCoreBluetoothError(nsError) ?? mapErrorCodeToEnum(errorCode)
         return createFlutterError(code: mappedCode, message: errorDescription, details: errorCode)
     }
+}
+
+/// Maps a CoreBluetooth `NSError` to a [UniversalBleErrorCode].
+///
+/// Apple has no bonding API: pairing is triggered by touching an encrypted
+/// characteristic, so the ATT error of that operation is the only signal of
+/// how the pairing ceremony ended. Returns `nil` for errors outside the
+/// CoreBluetooth domains, so the caller can fall back to its own codes.
+func mapCoreBluetoothError(_ error: NSError) -> UniversalBleErrorCode? {
+    if error.domain == CBATTErrorDomain {
+        switch CBATTError.Code(rawValue: error.code) {
+        case .insufficientAuthentication:
+            return .insufficientAuthentication
+        case .insufficientAuthorization:
+            return .insufficientAuthorization
+        case .insufficientEncryption:
+            return .insufficientEncryption
+        case .insufficientEncryptionKeySize:
+            return .insufficientKeySize
+        case .readNotPermitted:
+            return .readNotPermitted
+        case .writeNotPermitted:
+            return .writeNotPermitted
+        case .requestNotSupported:
+            return .operationNotSupported
+        case .attributeNotFound:
+            return .characteristicNotFound
+        case .invalidAttributeValueLength:
+            return .illegalArgument
+        default:
+            return .failed
+        }
+    }
+
+    if error.domain == CBErrorDomain {
+        switch CBError.Code(rawValue: error.code) {
+        case .peerRemovedPairingInformation:
+            return .notPaired
+        case .encryptionTimedOut:
+            return .pairingTimeout
+        case .peripheralDisconnected, .connectionTimeout:
+            return .deviceDisconnected
+        case .operationCancelled:
+            return .operationCancelled
+        case .connectionLimitReached:
+            return .failed
+        default:
+            return .failed
+        }
+    }
+
+    return nil
 }
 
 public extension CBUUID {
